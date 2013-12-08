@@ -7,7 +7,7 @@ var stringifyJSON = function (obj) {
 		case 'undefined':
 			return 'undefined';
 		case 'string':
-			return '\"' + obj + '\"';
+			return '"' + obj + '"';
 		case 'boolean':
 			return '' + obj;
 		case 'number':
@@ -32,7 +32,7 @@ var stringifyJSON = function (obj) {
 						offset++;
 					}
 				}
-			  	return  '{'.concat(arr.join(',')).concat('}');
+			  	return '{'.concat(arr.join(',')).concat('}');
 			}//end object
 		default:
 			return obj;

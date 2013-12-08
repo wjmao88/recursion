@@ -13,6 +13,5 @@ describe("stringifyJSON", function(){
       var expected = JSON.stringify(obj);
       expect(result).toEqual(expected);
     });
-
   });
 });
