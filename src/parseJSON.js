@@ -6,15 +6,17 @@ var parseJSON = function (json) {
 	if (json.charAt(0) != '{' || json.charAt(json.length-1) != '}'){
 		throw('missing brackets');
 	}
-  switch(jsonType){
-  	case 'map':
-  	case 'array':
-  	case 
-  }
+  // switch(jsonType){
+  // 	case 'map':
+  // 	case 'array':
+  // 	case 
+  // }
 };
 
 function jsonType(json){
-	if (json.charAt(''))
+	if (json.charAt('')){
+		
+	}
 }
 
 function jsonObject(json){
