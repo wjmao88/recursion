@@ -8,8 +8,8 @@ describe("parseJSON", function(){
       expect(equality).toBeTruthy();
     });
 
-    // if you really want to stress test your code, try this...
     // extraCreditStrings.forEach(function(string){
+    //   log(string);
     //   var expected = JSON.parse(string);
     //   var result = parseJSON(string);
     //   var equality = _.isEqual(result, expected);
@@ -18,7 +18,7 @@ describe("parseJSON", function(){
   });
 
   it("should error out sometimes", function(){
-    nonStringifiableValues.forEach(function(test){
+    arrayWithInvalidStrings.forEach(function(test){
       // expect(parseJSON(test)).toBe(undefined); // you can use this test if you'd prefer
       expect(function(){
         parseJSON(test);

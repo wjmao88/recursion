@@ -1,5 +1,5 @@
 // this is what you would do if you liked things to be easy:
- var nativeStringifyJSON = JSON.stringify;
+//var nativeStringifyJSON = JSON.stringify;
 
 // but you don't so you're going to have to write it from scratch:
 var stringifyJSON = function (obj) {
