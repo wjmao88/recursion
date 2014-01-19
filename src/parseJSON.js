@@ -1,248 +1,204 @@
 // this is what you would do if you were one to do things the easy way:
 // var parseJSON = JSON.parse;
 // but you're not, so you'll write it from scratch:
+
+var callDepth;
+var temp = {};
+
+var log = function(msg, change) {
+  change = isNaN(change) ? 0 : change;
+  setTimeout(function() {
+    if(false) {
+      callDepth = callDepth + change;
+      msg = ' ' + msg;
+      for (var i = 0; i < callDepth; i++){
+        msg = '----' + msg;
+      }
+      throw new Error(msg);
+    }
+  }, 0);
+};
+
 var parseJSON = function (json) {
-    log('==========start with: ' + json);
-    var current = 0;
-    var first = nextToken();
-    //check(first, '{[', 'first'); //json should begin as either of these?
-    var result;
-    log('first token is: ' + first);
-    if (first == '{'){
-      log(first == '{');
-      log('start with obj');
-      result = parseObject(); 
-    } else if (first == '['){
-      log('start with obj');
-      result = parseArray();
-    } else {
-      result = parseValue(first); //only an value is not valid json?
+  var Token = {
+    delim: 'delimiterType',
+    value: 'valueType',
+    string: 'stringType',
+    tokenize: function(type, content){
+      return {
+        'type': type,
+        'value': content
+      };
     }
+  };
 
-    log('==========final: ' + stringifyJSON(result));
-    return result;
-
-    function hasNext(){
-      return current < json.length;
-    }
-
-    function nextToken(){
-      var token = '';
-      var inQuote = false;
-      var singleToken = '[]{},:';
-      log('begin nextToken')
-      while(hasNext()){
-        log('current: ' + json.charAt(current) + '| so far: ' + token);
-        if (!inQuote && singleToken.indexOf(json.charAt(current)) != -1) {
-          log('terminating');
-          if (token.length > 0){
-            log('return token: ' + token);
-            return token;
-          } else {
-            current++;
-            log('return terminator: ' + json.charAt(current-1));
-            return json.charAt(current-1);
-          }
-        }
-        if (json.charAt(current) == '"'){
-          log('quote switch');
-          inQuote = !inQuote;
-        } else {
-          log('add to token');
-          token += json.charAt(current);
-        }
-        current++;
+  var assert = {
+    eq: function (actual, expect){
+      log('assert |' + actual + '| to equal |' + expect + '| ' + (expect == actual));
+      if (expect != actual){
+        throw ('invalid json, expect |' + actual + '| to equal |' + expect + '|');
+      } else {
+        return true;
       }
-      log('return end of file token: ' + token);
-      if (token.length == 0 || inQuote){
-        throw('unexpected end of file');
-      }
-      return token;
-    }
-
-    function getParser(token){
-      log('--------getParser with: ' + token);
-      if (token == '{'){
-        log('obj parser');
-        return parseObject;
-      } 
-      if (token == '['){
-        log('arr parser');
-        return parseArray;
-      }
-      log('value parser');
-      return parseValue;
-    }
-
-  	function parseObject(){
-      var obj = {};
-      var name, colon, value, ending;
-      while(hasNext){
-        name = nextToken();
-        if (name == '}'){
-          log('======return object: ' + obj);
-          return obj;
-        }
-        check(nextToken(), ':', 'parseObject');
-        value = nextToken();
-        obj[name] = getParser(value).apply(null, [value]);
-        log('******assign property: ' + name + ':' + obj[name]);
-        ending = nextToken();
-        check(ending, ',}', 'parseObject');
-        if (ending == '}'){
-          log('======return object: ' + obj);
-          return obj;
-        }
-      }
-      throw('unexpected end of object');
-  	}
-
-    function parseArray(){
-      var arr = [];
-      var value, ending;
-      while(hasNext){
-        value = nextToken();
-        log('[][][] array value is: ' + value);
-        if (value == ']'){
-          log('======return array: ' + arr);
-          return arr;
-        }
-        arr.push(getParser(value).apply(null, [value]));
-        log('******assign array: ' + arr[arr.length-1]);
-        ending = nextToken();
-        check(ending, ',]', 'parseArray');
-        if (ending == ']'){
-          log('======return array: ' + arr);
-          return arr;
-        }
-      }
-      throw('unexpected end of array');
-    }
-
-    function parseValue(value){
-      log('parsing value: ' + value);
-      if (!isNaN(value)){
-        log('number: ' + parseFloat(value));
-        return parseFloat(value);
-      }
-      switch(value){
-        case 'null': return null;
-        case 'true': return true;
-        case 'false': return false;
-        default: return value;
-      }
-    }
-
-    function check(actual, expect, funcName){
-      log('%%%checking, expect ' + expect + ' have ' + actual + ' at ' + current + ' executing ' + funcName);
+    },
+    in: function (actual, expect){
+      log('assert |' + actual + '| to be in |' + expect + '| ' + (expect.indexOf(actual)));
       if (expect.indexOf(actual) == -1){
-        throw ('invalid json, expect ' + expect + ' have ' + actual + ' at ' + current + ' executing ' + funcName);
+        throw ('invalid json, expect |' + actual + '| to be in |' + expect + '|');
       } else {
         return true;
       }
     }
-}
+  };
 
-
-function log(msg) {
-  setTimeout(function() {
-    if(true) {
-      throw new Error(msg);
-    }
-  }, 0);
-}
-//===========================
-var stringifyJSON = function (obj) {
-  switch(typeof obj){
-    case 'undefined':
-      return 'undefined';
-    case 'string':
-      return '"' + obj + '"';
-    case 'boolean':
-      return '' + obj;
-    case 'number':
-      return '' + obj;
-    case 'object':
-      var arr = [];
-      if (Array.isArray(obj)){
-        for (var i = 0; i < obj.length; i++){
-          arr[i]= stringifyJSON(obj[i]);
-        }
-        return '['.concat(arr.join(',')).concat(']');
-      } else {//object
-        if (obj == null){
-          return 'null';
-        }
-        var keys = Object.keys(obj);
-        var offset = 0;
-        for (var i = 0; i < keys.length; i++){
-          if (typeof obj[keys[i]] == 'object' || obj[keys[i]] != undefined && typeof obj[keys[i]] != 'function'){
-            arr[i-offset] = stringifyJSON(keys[i]).concat(':').concat(stringifyJSON(obj[keys[i]]));
+  var stream = {
+    current: 0,
+    hasNext: function (){
+      return stream.current < json.length;
+    },
+    head: function(){
+      return json.charAt(stream.current);
+    },
+    isDelimiter: function(){
+      var delimiter = '[]{},:';
+      return delimiter.indexOf(stream.head()) != -1;
+    },
+    isIgnore: function(){
+      var ignore = '\n\t\r ';
+      return ignore.indexOf(stream.head()) != -1
+    },
+    pop: function (){
+      log('@ start popping', 1);
+      var tokenString = '';
+      var inQuote = false; 
+      var inEscape = false; 
+      var isString = false;
+      while(stream.hasNext()){
+        log ('head: ' + stream.head());
+        if (!inQuote && !inEscape && stream.isDelimiter()) {
+          log('head is delimiter');
+          if (tokenString.length > 0){
+            log('^ a token was being built, return the token : ' + tokenString, -1);
+            return Token.tokenize(isString? Token.string : Token.value, tokenString);;
           } else {
-            offset++;
+            log('^ no token is being built, return delimiter as token : ' + stream.head(), -1);
+            tokenString = stream.head();
+            stream.current++;
+            return Token.tokenize(Token.delim, tokenString);
           }
+        } 
+        if (!inEscape && stream.head() == '"'){
+          log('quote switch to : ' + !inQuote);
+          inQuote = !inQuote;
+          isString = true;
+        } else if (!inEscape && inQuote && stream.head() == '\\'){
+          log('escape turn on : ' + !inEscape);
+          inEscape = true;
+        } else if (!inEscape && !inQuote && stream.isIgnore()){
+          log('white space outside of quote, ignore');
+        } else {
+          if (inEscape){
+            log('escape turn off : ' + !inEscape);
+            inEscape = false;
+          }
+          log('building token |' + tokenString + '| + |' + stream.head() + '|');
+          tokenString += stream.head();
         }
-          return '{'.concat(arr.join(',')).concat('}');
-      }//end object
-    default:
-      return obj;
-  }//end switch
-};
-//===========================
+        stream.current++;
+      }//end while
+      log('^ end of file, token is |' + tokenString + '|', -1);
+      if (inQuote || inEscape){
+        throw('unexpected end of file');
+      }
+      return Token.tokenize(isString? Token.string : Token.value, tokenString);;
+    }
+  };
+  
+  var parse = {
+    doParse: function(token){
+      var map = {
+        '{': parse.parseObject,
+        '[': parse.parseArray
+      }
+      log('routing : ' + token.type + ' ' + token.value);
+      var result;
+      if (token.type === Token.delim) {
+        result = map[token.value]();
+      } else if (token.type === Token.value || token.type == Token.string) {
+        result = parse.parseValue(token);
+      } else {
+        throw 'bad token';
+      }
+      log('good token finished : ' + result);
+      return result;
+    },
+  	parseObject: function (){
+      log('@ begin object construction', 1);
+      var obj = {};
+      var name, ending;
+      while(stream.hasNext()){
+        name = stream.pop();
+        if (name.value == '}'){
+          assert.eq(Object.keys(obj).length, 0);
+          log('^ end of empty object, return : ' + obj, -1);
+          return obj;
+        }
+        assert.eq(stream.pop().value, ':'); //this pop should pop the colon
+        obj[name.value] = parse.doParse(stream.pop());
+        log('+ assign: ' + name.value + ': ' + obj[name.value]);
+        ending = stream.pop();
+        assert.in(ending.value, ',}');
+        if (ending.value == '}'){
+          log('^ end of non empty object, return : ' + obj, -1);
+          return obj;
+        } //else just carry on
+      }
+      throw('unexpected end of object');
+  	},
+    parseArray: function (){
+      log('@ begin array construction', 1);
+      var arr = [];
+      var value, ending;
+      while(stream.hasNext()){
+        value = stream.pop();
+        if (value.value == ']'){
+          assert.eq(arr.length, 0);
+          log('^ end of empty array, return : ' + arr, -1);
+          return arr;
+        }
+        arr.push(parse.doParse(value));
+        log('+ push : ' + arr.length + ' : ' + arr[arr.length-1]);
+        ending = stream.pop();
+        assert.in(ending.value, ',]');
+        if (ending.value == ']'){
+          log('^ end of non empty aray, return : ' + arr, -1);
+          return arr;
+        } 
+      }
+      throw('unexpected end of array');
+    },
+    parseValue: function (token){
+      log('begin parsing token: ' + token.type + ' : ' +  token.value);
+      if (token.type == Token.string){
+        return token.value;
+      }
+      if (!isNaN(token.value)){
+        return parseFloat(token.value);
+      } 
+      switch(token.value){
+        case 'null': return null;
+        case 'true': return true;
+        case 'false': return false;
+        default: throw ('unexpected fall through'); //this case is same as first return
+      }
+    }
+  };
 
-// var parseJSON = function (json) {
-//   	switch(jsonType(json)){
-// 	  	case 'map':
-// 	  		return jsonObject(json);
-// 	  		break;
-// 	  	case 'array': 
-// 	  		return jsonArray(json);
-// 	  		break;
-// 	  	case 'value': 
-// 	  		return jsonValue(json);
-// 	  		break;
-// 	  	default:
-// 	  		throw('bad json string');
-// 	  		break;
-// 	}
-// };
-
-// function jsonType(json){
-// 	if (json.charAt(0) == '{' && json.charAt(json.length-1) != '}'){
-// 		return 'object';
-// 	}
-// 	if (json.charAt(0) == '[' && json.charAt(json.length-1) != ']'){
-// 		return 'array';
-// 	}
-// 	return 'value';
-// }
-
-// function jsonObject(json){
-// 	var obj = {};
-// 	var arr = json.slice(1, json.length-1).split(',');
-// 	for (var i = 0; i < arr.length; i++){
-// 		obj(jsonValue(arr[i].slice(0, arr[i].indexOf(':')))) = parseJson(arr[i].slice(0, arr[i].indexOf(':')));
-// 	}
-// 	return obj;
-// }
-
-// function jsonArray(json){
-// 	var result= [];
-// 	var arr = json.split(',');
-// 	for (var i = 0; i < arr.length; i++){
-// 		result[i] = parseJson(arr[i]);
-// 	}
-// 	return result;
-// }
-
-// function jsonValue(json){
-// 	if (!isNaN(json)){
-// 		return parseFloat(json);
-// 	}
-// 	switch(json){
-// 		case 'null': return null;
-// 		case 'true': return true;
-// 		case 'false': return false;
-// 		default: return json;
-// 	}
-// }
+  callDepth = 0;
+  log('begin parsing of json =======================: ' + json);
+  temp.json = json;
+  temp.my = parse.doParse(stream.pop());
+  temp.sys = JSON.parse(json);
+  log('end result of json ==========================: ' + temp.my);
+  return temp.my;
+}
